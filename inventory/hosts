@@ -1,0 +1,8 @@
+[bc250]
+orange_box ansible_host=192.168.1.137
+
+[bazzite:children]
+bc250
+
+[bazzite:vars]
+ansible_user=gamer

@@ -1,0 +1,68 @@
+- name: "Check latest cyan-skillfish release"
+  ansible.builtin.uri:
+    url: https://api.github.com/repos/filippor/cyan-skillfish-governor/releases/latest
+    return_content: true
+  register: github_api
+
+- name: "Ensure extraction directory exists"
+  ansible.builtin.file:
+    path: "{{ governor_path }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+
+- name: "Downloading cyan-skillfish-smu governor"
+  ansible.builtin.unarchive:
+    src: "{{ github_api.json.assets.0.browser_download_url }}"
+    dest: "{{ governor_path }}"
+    remote_src: yes
+    extra_opts: ['--strip-components=1']
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+
+- name: "Downloading D-Bus configuration"
+  ansible.builtin.get_url:
+    url: "{{ governor_repo_url }}/com.cyan.SkillFishGovernor.conf"
+    dest: "{{ governor_path }}/"
+
+- name: "Ensure scripts directory exists"
+  ansible.builtin.file:
+    path: "{{ governor_path }}/scripts"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+
+- name: "Downloading performance mode script"
+  ansible.builtin.get_url:
+    url: "{{ governor_repo_url }}/scripts/cyan-skillfish-performance-mode"
+    dest: "{{ governor_path }}/scripts"
+    mode: "0755"
+
+- name: "Update governor config"
+  ansible.builtin.copy:
+    src: "config.toml"
+    dest: "{{ governor_path }}/config.toml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+
+- name: "Stop service if it exists"
+  become: true
+  ansible.builtin.systemd_service:
+    name: "cyan-skillfish-governor-smu.service"
+    state: stopped
+  ignore_errors: true
+
+- name: "Run the installation script"
+  become: true
+  ansible.builtin.shell:
+    cmd: "bash install.sh"
+    chdir: "{{ governor_path }}"
+
+- name: "Enable and start the Governor service"
+  become: true
+  ansible.builtin.systemd_service:
+    name: "cyan-skillfish-governor-smu"
+    enabled: yes
+    state: started

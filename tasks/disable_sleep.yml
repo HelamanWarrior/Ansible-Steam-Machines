@@ -1,0 +1,10 @@
+- name: "Mask sleep and suspend targets"
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    masked: yes
+    state: stopped
+  loop:
+    - sleep.target
+    - suspend.target
+    - hybrid-sleep.target

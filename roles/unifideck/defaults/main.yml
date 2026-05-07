@@ -1,0 +1,2 @@
+homebrew_plugin_path: "/home/{{ansible_user }}/homebrew/plugins"
+unifideck_plugin_path: "{{ homebrew_plugin_path }}/Unifideck"

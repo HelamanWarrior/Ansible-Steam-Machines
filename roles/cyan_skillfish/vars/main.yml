@@ -1,0 +1,2 @@
+governor_path: "/tmp/cyan-skillfish-smu"
+governor_repo_url: "https://raw.githubusercontent.com/filippor/cyan-skillfish-governor/refs/heads/smu"
