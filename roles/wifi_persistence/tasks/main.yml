@@ -1,0 +1,35 @@
+- name: "Disable WiFi power-saving"
+  become: true
+  ansible.builtin.copy:
+    src: rtw88.conf
+    dest: /etc/modprobe.d/rtw88.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: "WiFi persistence across reboots"
+  block:
+    - name: "Create wifi-reinit script"
+      become: true
+      ansible.builtin.copy:
+        src: wifi-reinit.sh
+        dest: /usr/local/bin/wifi-reinit.sh
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: "Create wifi-reinit systemd service"
+      become: true
+      ansible.builtin.copy:
+        src: wifi-reinit.service
+        dest: /etc/systemd/system/wifi-reinit.service
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: "Enable wifi-reinit systemd service"
+      become: true
+      ansible.builtin.systemd_service:
+        name: wifi-reinit
+        enabled: yes
+        daemon_reload: true

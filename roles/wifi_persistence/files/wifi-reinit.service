@@ -1,0 +1,11 @@
+[Unit]
+Description=Force Re-initialize WiFi on Boot
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/wifi-reinit.sh
+User=root
+
+[Install]
+WantedBy=multi-user.target
