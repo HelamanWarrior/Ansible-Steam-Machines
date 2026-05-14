@@ -1,11 +1,12 @@
 - name: "Disable WiFi power-saving"
   become: true
   ansible.builtin.copy:
-    src: rtw88.conf
     dest: /etc/modprobe.d/rtw88.conf
     owner: root
     group: root
     mode: '0644'
+    content: |
+      options rtw88_core disable_lps_deep=y
 
 - name: "WiFi persistence across reboots"
   block:

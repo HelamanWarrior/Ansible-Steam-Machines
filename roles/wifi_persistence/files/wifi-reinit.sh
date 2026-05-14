@@ -1,9 +1,19 @@
 #!/bin/bash
-# Forcefully remove the driver stack
-modprobe -r rtw88_8822bu rtw88_usb rtw88_core
+
+# Wait for system to settle
+sleep 10
+
+if nmcli -t -f TYPE,STATE dev | grep -q "wifi:connected"; then
+    echo "WiFi is already healthy. Skipping reset." | systemd-cat -t wifi-reset
+    exit 0
+fi
+
+echo "WiFi connection not detected. Starting surgical recovery..." | systemd-cat -t wifi-reset
+
+/usr/bin/sysetmctl stop NetworkManager
+/usr/sbin/modprobe -r rtw88_8822bu
+/usr/sbin/modprobe -r btusb
 sleep 2
-# Reset the USB device at the bus level
-for i in /sys/bus/usb/devices/*/authorized; do echo 0 > $i; echo 1 > $i; done
-sleep 2
-# Reload the driver
-modprobe rtw88_8822bu
+/usr/sbin/modprobe rtw88_8822bu
+/usr/sbin/modprobe btusb
+/usr/bin/systemctl start NetworkManager

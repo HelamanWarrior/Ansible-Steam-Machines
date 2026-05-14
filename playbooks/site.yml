@@ -14,5 +14,5 @@
     - name: "Disable sleep and hibernation"
       ansible.builtin.import_tasks: ../tasks/disable_sleep.yml
   roles:
-    - cyan_skillfish
+    #- cyan_skillfish
     - wifi_persistence
