@@ -1,8 +1,9 @@
+---
 - name: "Mask sleep and suspend targets"
   become: true
   ansible.builtin.systemd:
     name: "{{ item }}"
-    masked: yes
+    masked: true
     state: stopped
   loop:
     - sleep.target

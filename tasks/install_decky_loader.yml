@@ -1,4 +1,5 @@
-- name: "Install Decky Loader"
-  ansible.builtin.shell: "ujust setup-decky install"
-  args:
-    creates: "/home/{{ ansible_user }}/homebrew/services/PluginLoader"
+---
+- name: Install Decky Loader
+  ansible.builtin.command:
+    cmd: "ujust setup-decky install"
+    creates: "{{ ansible_facts['env']['HOME'] }}/homebrew/services/PluginLoader"

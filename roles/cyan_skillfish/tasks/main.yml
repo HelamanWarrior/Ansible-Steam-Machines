@@ -1,34 +1,36 @@
-- name: "Check latest cyan-skillfish release"
+---
+- name: Check latest cyan-skillfish release
   ansible.builtin.uri:
     url: https://api.github.com/repos/filippor/cyan-skillfish-governor/releases/latest
     return_content: true
-  register: github_api
+  register: cyan_skillfish_github_api
 
-- name: "Ensure extraction directory exists"
+- name: Ensure extraction directory exists
   ansible.builtin.file:
-    path: "{{ governor_path }}"
+    path: "{{ cyan_skillfish_path }}"
     state: directory
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: '0755'
 
-- name: "Downloading cyan-skillfish-smu governor"
+- name: Downloading cyan-skillfish-smu governor
   ansible.builtin.unarchive:
-    src: "{{ github_api.json.assets.0.browser_download_url }}"
-    dest: "{{ governor_path }}"
-    remote_src: yes
+    src: "{{ cyan_skillfish_github_api.json.assets.0.browser_download_url }}"
+    dest: "{{ cyan_skillfish_path }}"
+    remote_src: true
     extra_opts: ['--strip-components=1']
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
 
-- name: "Downloading D-Bus configuration"
+- name: Downloading D-Bus configuration
   ansible.builtin.get_url:
-    url: "{{ governor_repo_url }}/com.cyan.SkillFishGovernor.conf"
-    dest: "{{ governor_path }}/"
+    url: "{{ cyan_skillfish_url }}/com.cyan.SkillFishGovernor.conf"
+    dest: "{{ cyan_skillfish_path }}/"
+    mode: '0600'
 
-- name: "Ensure scripts directory exists"
+- name: Ensure scripts directory exists
   ansible.builtin.file:
-    path: "{{ governor_path }}/scripts"
+    path: "{{ cyan_skillfish_path }}/scripts"
     state: directory
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
@@ -36,33 +38,39 @@
 
 - name: "Downloading performance mode script"
   ansible.builtin.get_url:
-    url: "{{ governor_repo_url }}/scripts/cyan-skillfish-performance-mode"
-    dest: "{{ governor_path }}/scripts"
+    url: "{{ cyan_skillfish_url }}/scripts/cyan-skillfish-performance-mode"
+    dest: "{{ cyan_skillfish_path }}/scripts"
     mode: "0755"
 
-- name: "Update governor config"
+- name: Update governor config
   ansible.builtin.copy:
     src: "config.toml"
-    dest: "{{ governor_path }}/config.toml"
+    dest: "{{ cyan_skillfish_path }}/config.toml"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
+    mode: '0600'
 
-- name: "Stop service if it exists"
+- name: Stop service if it exists
   become: true
   ansible.builtin.systemd_service:
     name: "cyan-skillfish-governor-smu.service"
     state: stopped
-  ignore_errors: true
+  register: cyan_skillfish_service_result
+  failed_when:
+    - cyan_skillfish_service_result.failed
+    - '"Could not find the systemd unit" not in cyan_skillfish_service_result.msg'
+    - '"not loaded" not in cyan_skillfish_service_result.msg'
 
-- name: "Run the installation script"
+- name: Run the installation script
   become: true
-  ansible.builtin.shell:
+  ansible.builtin.command:
     cmd: "bash install.sh"
-    chdir: "{{ governor_path }}"
+    chdir: "{{ cyan_skillfish_path }}"
+    creates: "/etc/cyan-skillfish-governor-smu/cyan-skillfish-governor-smu"
 
-- name: "Enable and start the Governor service"
+- name: Enable and start the Governor service
   become: true
   ansible.builtin.systemd_service:
     name: "cyan-skillfish-governor-smu"
-    enabled: yes
+    enabled: true
     state: started

@@ -1,0 +1,36 @@
+---
+- name: Install BC250 CPU undervolting utility
+  ansible.builtin.pip:
+    name: git+https://github.com/bc250-collective/bc250_smu_oc.git
+    extra_args: --user
+
+- name: Create the overclock configuration file
+  become: true
+  ansible.builtin.copy:
+    src: bc250-smu-oc.conf
+    dest: /etc/bc250_overclock.conf
+    mode: '0644'
+
+- name: Create the systemd service
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/bc250-smu-oc.service
+    content: |
+      [Unit]
+      Description=AMD BC-250 CPU Undervolt
+
+      [Service]
+      ExecStart=/usr/bin/python3 {{ ansible_facts['env']['HOME'] }}/.local/lib/python3.14/site-packages/bc250_apply.py --apply /etc/bc250-smu-oc.conf
+      Restart=no
+
+      [Install]
+      WantedBy=multi-user.target
+    mode: '0644'
+
+- name: Enable and start the undervolt service
+  become: true
+  ansible.builtin.systemd:
+    name: bc250-smu-oc
+    enabled: true
+    state: started
+    daemon_reload: true

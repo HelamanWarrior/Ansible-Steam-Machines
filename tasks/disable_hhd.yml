@@ -1,7 +1,8 @@
+---
 - name: "Disable Bazzite Handheld Daemon (HHD)"
   become: true
   ansible.builtin.systemd_service:
     name: hhd
-    masked: yes
-    enabled: no
+    masked: true
+    enabled: false
     state: stopped

@@ -1,4 +1,4 @@
-- name: "Ensure decky plugin directory exists"
+- name: Ensure decky plugin directory exists
   become: true
   ansible.builtin.file:
     path: "/home/{{ ansible_user }}/homebrew/plugins"
@@ -7,48 +7,49 @@
     group: root
     mode: '0755'
 
-- name: "Fetch metadata"
+- name: Fetch metadata
   block:
-    - name: "Check latest Unifideck release"
+    - name: Check latest Unifideck release
       ansible.builtin.uri:
         url: https://api.github.com/repos/mubaraknumann/unifideck/releases/latest
         return_content: true
       register: unifideck_release
-    
-    - name: "Check exisiting Unifideck version"
+
+    - name: Check existing Unifideck version
       ansible.builtin.slurp:
         src: "{{ unifideck_plugin_path }}/package.json"
-      register: existing_package_json
+      register: unifideck_existing_package
       ignore_errors: true
-    
-    - name: "Set version facts"
+
+    - name: Set version facts
       ansible.builtin.set_fact:
-        zip_url: "{{ unifideck_release.json.assets.0.browser_download_url }}"
-        latest_ver: "{{ unifideck_release.json.tag_name | replace('Release-', '') }}"
-        current_ver: "{{ (existing_package_json.content | b64decode | from_json).version | default('0.0.0') }}"
-    
-- name: "Update/Install Unifideck plugin"
-  when: latest_ver is ansible.builtin.version(current_ver, '>')
+        unifideck_zip_url: "{{ unifideck_release.json.assets.0.browser_download_url }}"
+        unifideck_latest_ver: "{{ unifideck_release.json.tag_name | replace('Release-', '') }}"
+        unifideck_current_ver: "{{ (unifideck_existing_package.content | b64decode | from_json).version | default('0.0.0') }}"
+
+- name: Update/Install Unifideck plugin
+  when: unifideck_latest_ver is ansible.builtin.version(unifideck_current_ver, '>')
+  become: true
   block:
-  - name: "Downloading Unifideck plugin"
-    ansible.builtin.unarchive:
-      src: "{{ zip_url }}"
-      dest: "{{ homebrew_plugin_path }}"
-      remote_src: yes
-      owner: "{{ ansible_user }}"
-      group: "{{ ansible_user }}"
-      mode: "u=rwX,g=rX,o=rX"
-  
-  - name: "Update plugin permissions"
-    become: true
-    ansible.builtin.file:
-      path: "{{ unifideck_plugin_path }}/plugin.json"
-      owner: root
-      group: root
-      mode: '0644'
-  
-  - name: "Restart Decky Loader"
-    become: true
-    ansible.builtin.systemd_service:
-      name: plugin_loader
-      state: restarted
+    - name: Downloading Unifideck plugin
+      ansible.builtin.unarchive:
+        src: "{{ unifideck_zip_url }}"
+        dest: "{{ unifideck_homebrew_path }}"
+        remote_src: true
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "u=rwX,g=rX,o=rX"
+
+    - name: Update plugin permissions
+      become: true
+      ansible.builtin.file:
+        path: "{{ unifideck_plugin_path }}/plugin.json"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Restart Decky Loader
+      become: true
+      ansible.builtin.systemd_service:
+        name: plugin_loader
+        state: restarted
